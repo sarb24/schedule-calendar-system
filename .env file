@@ -1,0 +1,4 @@
+DATABASE_URL="postgres://sarb:100.Khadijakhan@host:port/database?sslmode=require"
+POSTGRES_PRISMA_URL="postgres://sarb:100.Khadijakhan@host:port/database?sslmode=require"
+NEXTAUTH_SECRET="ncGl/XFkmLSmN/lb8aRXtClyjVFacUZ/5tQekXZJi3E="
+NEXTAUTH_URL="http://localhost:3000"

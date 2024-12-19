@@ -1,0 +1,38 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  userType  String
+  phone     String?
+  address   String?
+  shifts    Shift[]
+  bookings  Booking[]
+}
+
+model Shift {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  type      String
+  status    String
+  staff     User?    @relation(fields: [staffId], references: [id])
+  staffId   Int?
+  bookings  Booking[]
+}
+
+model Booking {
+  id            Int      @id @default(autoincrement())
+  shift         Shift    @relation(fields: [shiftId], references: [id])
+  shiftId       Int
+  serviceUser   User     @relation(fields: [serviceUserId], references: [id])
+  serviceUserId Int
+  status        String
+}
+generator client {
+  provider = "prisma-client-js"
+}
