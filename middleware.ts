@@ -1,44 +1,29 @@
+export const runtime = 'edge'
+
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { jwtVerify } from 'jose'
 
-export async function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value
+export async function middleware(req) {
+  // Get the token from the request headers
+  const token = req.headers.get('authorization')?.substring(7)
 
+  // If no token is provided, return 401
   if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const decoded = await verifyToken(token)
-    const user = decoded.user
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET))
+    const user = payload as any
 
-    if (request.nextUrl.pathname.startsWith('/admin') && user.userType !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
+    // Set the user in the request context
+    req.user = user
 
-    if (request.nextUrl.pathname.startsWith('/contractor') && user.userType !== 'CONTRACTOR') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-
-    if (user.userType === 'CONTRACTOR') {
-      // Allow access only to available services and hired employees
-      const allowedPaths = ['/contractor/services', '/contractor/employees']
-      if (!allowedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
-        return NextResponse.redirect(new URL('/contractor/services', request.url))
-      }
-    }
-
-    // Add more permission checks as needed
-
+    // Continue to the next middleware or page
+    return NextResponse.next()
   } catch (error) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    // If the token is invalid, return 401
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
   }
-
-  return NextResponse.next()
-}
-
-export const config = {
-  matcher: ['/dashboard/:path*', '/admin/:path*', '/contractor/:path*'],
 }
 
