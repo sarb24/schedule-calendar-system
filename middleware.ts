@@ -1,29 +1,32 @@
 export const runtime = 'edge'
 
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-export async function middleware(req) {
-  // Get the token from the request headers
-  const token = req.headers.get('authorization')?.substring(7)
+export async function middleware(request: NextRequest) {
+  const token = request.cookies.get('token')?.value
 
-  // If no token is provided, return 401
   if (!token) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET))
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+    const { payload } = await jwtVerify(token, secret)
     const user = payload as any
 
-    // Set the user in the request context
-    req.user = user
+    if (request.nextUrl.pathname.startsWith('/admin') && user.userType !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
 
-    // Continue to the next middleware or page
     return NextResponse.next()
   } catch (error) {
-    // If the token is invalid, return 401
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    return NextResponse.redirect(new URL('/login', request.url))
   }
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/contractor/:path*'],
 }
 
